@@ -8,6 +8,6 @@ of scene flow prediction with an EPE < 0.05m or
 relative error < 5% (also following FlowNet3D)
 - preprocessing: ground point are removed.
 -** Details:**
-- - Velodyne scans (i.e. the point clouds) are stored as floating point binaries, each point is stored with $(x, y, z)$ coordinate and reflectance value $(r)$, (however this project does not use $(r)$)
+- - Velodyne scans (i.e., the point clouds) are stored as floating point binaries, each point is stored with $(x, y, z)$ coordinate and reflectance value $(r)$, (however this project does not use $(r)$)
 - - **Format**: each "scene" are associated with 3 attributes. `pos1; pos2; gt`, where `pos` are Cartesian coordinates of points in $R^3$, `gt` is the displacement vector, and pos1 + gt = pos2 . (unit?)<img src="C:\Users\11385\AppData\Roaming\Typora\typora-user-images\image-20210615163526975.png" alt="image-20210615163526975" style="zoom: 50%;" />
 
