@@ -1,0 +1,8 @@
+Len of test: 50
+Num batches 50 Average EPE 0.6643288511468228 ACC3d 0.0358984375 ACC3d_2 0.162138671875
+avg loss: 0.131016
+eval mean EPE 3D: 0.664329
+eval mean ACC 3D: 0.035898
+eval mean ACC 3D 2: 0.162139
+PROGRESS: 100.0%
+
