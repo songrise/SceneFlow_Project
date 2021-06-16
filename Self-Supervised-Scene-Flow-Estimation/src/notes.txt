@@ -1,0 +1,10 @@
+explanation of the scripts:
+These are to load datasets
+- kitti_dataset_self_supervised_cycle
+- nuscenes_dataset_self_supervised_cycle
+
+These are the defination of the network model, where cycle perhaps indicate ablation of cycle loss
+- model_concat_upsa_cycle
+- model_concat_upsa
+
+

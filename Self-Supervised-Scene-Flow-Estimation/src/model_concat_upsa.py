@@ -1,4 +1,6 @@
-
+"""
+Remarks: I find this is copied from FlowNet 3D, origin please refer to xingyul/flownet3d.
+"""
 import tensorflow as tf
 import numpy as np
 import math
@@ -273,5 +275,5 @@ def get_loss(pred, label, mask, end_points):
 if __name__ == '__main__':
     with tf.Graph().as_default():
         inputs = tf.zeros((32, 1024 * 2, 6))
-        outputs = get_model(inputs, tf.constant(True))
+        outputs = get_model(5, 'pointnet',inputs, tf.constant(True))
         print(outputs)

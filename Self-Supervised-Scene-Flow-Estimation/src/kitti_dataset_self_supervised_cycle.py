@@ -39,6 +39,7 @@ class SceneflowDataset():
 
             start_idx = np.random.choice(np.arange(len(pc_list)-self.num_frames+1),
                                          size=1)[0]
+            # start_idx = 0
             pos_list = []
             color_list = []
             min_length = np.min([len(x) for x in pc_list])
@@ -73,7 +74,15 @@ class SceneflowDataset():
 
 
 if __name__ == '__main__':
-    d = SceneflowDataset(npoints=2048, train = False)
+    d = SceneflowDataset(root = "/home/songrise/Desktop/Summer_Research/Self-Supervised-Scene-Flow-Estimation/data_preprocessing/kitti_self_supervised_flow",npoints=2048, train = True)
     print('Len of dataset:', len(d))
+    # print(d[10])
+    bsize = 4
+    # idxs =
+    for i in range(bsize):
+        # ipdb.set_trace()
+        # if dataset[0] == None:
+        #     print (i, bsize)
+        pos, color = d[idxs[i + start_idx]]
 
 

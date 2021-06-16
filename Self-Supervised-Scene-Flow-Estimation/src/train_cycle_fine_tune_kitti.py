@@ -509,6 +509,8 @@ def train_one_epoch_kitti(sess, ops, train_writer):
     log_string('Train all losses {}'.format(end_points_loss_val))
     loss_sum = 0
 
+
+# noinspection PyInterpreter
 def eval_one_epoch_kitti(sess, ops, test_writer):
     is_training = False
     loss_sum = 0
