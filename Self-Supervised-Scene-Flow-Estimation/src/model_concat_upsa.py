@@ -1,6 +1,9 @@
 """
-Remarks: I find this is copied from FlowNet 3D, origin please refer to xingyul/flownet3d.
+!Re: I find this script is modified from FlowNet 3D, 
+origin: https://github.com/xingyul/flownet3d/blob/master/model_concat_upsa.py
 """
+from utils.pointnet_util import *
+import utils.tf_util
 import tensorflow as tf
 import numpy as np
 import math
@@ -9,8 +12,6 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
-import utils.tf_util
-from utils.pointnet_util import *
 
 
 def placeholder_inputs(batch_size, num_point):
@@ -25,17 +26,22 @@ def placeholder_inputs(batch_size, num_point):
 def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False, flow_module='default'):
     """ Semantic segmentation PointNet, input is BxNx3, output Bxnum_class """
 
-    end_points = {}
+    end_points = {}  # ! Re perhaps to store internal steps
+    #! Re: point_cloud, as a matrix is probably BxNxD, where D is dimension of point features
+
     batch_size = point_cloud.get_shape()[0].value  # batch_size = 16
     num_point = point_cloud.get_shape()[1].value // 2
     # change here, num_point hard coded to 2048
     # num_point = 2048
 
+    #! Re: D is xyz plus addtional features. l0_xyz_f1 is coordinates, l0_points_f1 is (if any) features
+    #! l0 means layer 0, f1 means first frame
     l0_xyz_f1 = point_cloud[:, :num_point, 0:3]
     l0_points_f1 = point_cloud[:, :num_point, 3:]
     l0_xyz_f2 = point_cloud[:, num_point:, 0:3]
     l0_points_f2 = point_cloud[:, num_point:, 3:]
 
+    #! Re: the radius for grouping in PointNet++.
     RADIUS1 = 0.5
     RADIUS2 = 1.0
     RADIUS3 = 2.0
@@ -44,7 +50,13 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
     with tf.variable_scope('sa1') as scope:
         # radius, npoints, nlayers, mlp size, sampling technique
         # Set conv layers, POINT FEATURE LEARNING
+        #! Re: in early stage, tensors of two frames are in different layer.
         # Frame 1, Layer 1 (with radius = 0.5)
+        #! Re: apply Point Net Layer,which returns new xyz, new features, indices from ball point query
+        #! Recall that pointNet layer could be seen as an analogy to conv layers.
+        #! indices means local regions (points in group?)
+        #! sa means Set Abstraction, which is referred to as set conv in FlowNet3D.
+
         l1_xyz_f1, l1_points_f1, l1_indices_f1 = pointnet_sa_module(l0_xyz_f1,
                                                                     l0_points_f1,
                                                                     npoint=1024,
@@ -59,6 +71,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
                                                                     scope='layer1',
                                                                     knn=knn)
         end_points['l1_indices_f1'] = l1_indices_f1
+        #! Re: what these two lines mean?
         end_points['l1_xyz_f1'] = l1_points_f1
         end_points['l1_input_f1'] = l0_xyz_f1
 
@@ -102,7 +115,6 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
         # Tensor("sa1/layer1_1/Squeeze:0", shape=(16, 1024, 64), dtype=float32, device= / device: GPU:0)
         # Tensor("sa1/layer1_1/QueryBallPoint:0", shape=(16, 1024, 16), dtype=int32, device= / device: GPU:0)
 
-
         # Frame 2, Layer 2(with radius = 1.0), input are of the above function's output
         l2_xyz_f2, l2_points_f2, l2_indices_f2 = pointnet_sa_module(l1_xyz_f2,
                                                                     l1_points_f2,
@@ -121,17 +133,19 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
         end_points['l2_xyz_f2'] = l2_indices_f2
         end_points['l2_input_f2'] = l1_xyz_f2
 
-
         # Tensor("sa1/layer2_1/GatherPoint:0", shape=(16, 256, 3), dtype=float32, device= / device: GPU:0)
         # Tensor("sa1/layer2_1/Squeeze:0", shape=(16, 256, 128), dtype=float32, device= / device: GPU:0)
         # Tensor("sa1/layer2_1/QueryBallPoint:0", shape=(16, 256, 16), dtype=int32, device= / device: GPU:0)
 
     # POINT MIXTURE
+    #! Re: Refer to FlowNet3D, two scene are mixed here.
     # embedding layer
     # radius = 1, 10, 50
     print("Radius here:", radius)
     print('KNN', knn)
     print('flow module', flow_module)
+    #! Re refer to sec 4.2 in FlowNet3D, this module learn an flow embedding.
+    #! a flow embedding is an implicit representation of point motion.
     if flow_module == 'default':
         _, l2_points_f1_new = flow_embedding_module(l2_xyz_f1, l2_xyz_f2,
                                                     l2_points_f1, l2_points_f2,
@@ -144,18 +158,23 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
                                                     corr_func='concat')
         end_points['l2_points_f1_new'] = l2_points_f1_new
     elif flow_module == 'all':
+        #! Re, "_" is substantially l2_xyz_f1.
+        #! Re I did not find any skip connections in this implementation refer to author's
+        #! comment (https://github.com/xingyul/flownet3d/blob/ca2a2cb8e1e747949111fc4aa9d3bc010cc0e09b/utils/pointnet_util.py#L308)
+        #! it seems that it is not implemented....
         _, l2_points_f1_new = flow_embedding_module_all(l2_xyz_f1, l2_xyz_f2,
-                                                    l2_points_f1, l2_points_f2,
-                                                    radius=radius, nsample=256,
-                                                    mlp=[128, 128, 128],
-                                                    is_training=is_training,
-                                                    bn_decay=bn_decay,
-                                                    scope='flow_embedding', bn=True,
-                                                    pooling='max', knn=True,
-                                                    corr_func='concat')
+                                                        l2_points_f1, l2_points_f2,
+                                                        radius=radius, nsample=256,
+                                                        mlp=[128, 128, 128],
+                                                        is_training=is_training,
+                                                        bn_decay=bn_decay,
+                                                        scope='flow_embedding', bn=True,
+                                                        pooling='max', knn=True,
+                                                        corr_func='concat')
         end_points['l2_points_f1_new'] = l2_points_f1_new
 
     # setconv layer
+    #! Re encoders
     # Layer 3 with radius = 2.0
     l3_xyz_f1, l3_points_f1, l3_indices_f1 = pointnet_sa_module(l2_xyz_f1,
                                                                 l2_points_f1_new,
@@ -194,7 +213,10 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
     # Tensor("layer4/Squeeze:0", shape=(16, 16, 512), dtype=float32, device=/device:GPU:0)
     # Tensor("layer4/QueryBallPoint:0", shape=(16, 16, 8), dtype=int32, device=/device:GPU:0)
 
-    ### FLOW REFINEMENT MODULE
+    # FLOW REFINEMENT MODULE
+    #! Re decoders
+    #! Feature propagation from xyz2 (less points) to xyz1 (more points)
+    #! i.e. upsampling or interpolarion
     # Feature Propagation
     # Frame 1, l1->l2; l2->l3; l3->l4
     l3_feat_f1 = set_upconv_module(l3_xyz_f1, l4_xyz_f1, l3_points_f1,
@@ -223,15 +245,19 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
                                    knn=True)
     end_points['l1_feat_f1'] = l1_feat_f1
 
+    #! Re: seems modified the original FlowNet3D impl.
+    #! https://github.com/xingyul/flownet3d/blob/ca2a2cb8e1e747949111fc4aa9d3bc010cc0e09b/model_concat_upsa.py#L68
     if layer == 'pointnet':
+        #! Re: 3D interpolation
         l0_feat_f1 = pointnet_fp_module(l0_xyz_f1, l1_xyz_f1, l0_points_f1,
                                         l1_feat_f1, [256, 256], is_training,
                                         bn_decay, scope='fa_layer4')
     else:
-        print ('Last set conv layer running')
+        #! Re: 3D up conv
+        print('Last set conv layer running')
         l0_feat_f1 = set_upconv_module(l0_xyz_f1, l1_xyz_f1, l0_points_f1,
                                        l1_feat_f1, nsample=8, radius=0.3,
-                                       mlp=[128,128,256], mlp2=[256],
+                                       mlp=[128, 128, 256], mlp2=[256],
                                        scope='up_sa_layer4',
                                        is_training=is_training, bn_decay=bn_decay,
                                        knn=True)
@@ -275,5 +301,5 @@ def get_loss(pred, label, mask, end_points):
 if __name__ == '__main__':
     with tf.Graph().as_default():
         inputs = tf.zeros((32, 1024 * 2, 6))
-        outputs = get_model(5, 'pointnet',inputs, tf.constant(True))
+        outputs = get_model(5, 'pointnet', inputs, tf.constant(True))
         print(outputs)

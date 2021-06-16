@@ -8,15 +8,16 @@ import glob
 import random
 # import mayavi.mlab as mlab
 
+
 class SceneflowDataset():
-    def __init__(self, root = './data_preprocessing/kitti_self_supervised_flow',
-                 cache_size = 30000, npoints=2048, train=True,
-                 softmax_dist = False, num_frames=3, flip_prob=0,
+    def __init__(self, root='./data_preprocessing/kitti_self_supervised_flow',
+                 cache_size=30000, npoints=2048, train=True,
+                 softmax_dist=False, num_frames=3, flip_prob=0,
                  sample_start_idx=-1):
         self.npoints = npoints
         self.train = train
         self.root = root
-        if self.train:    
+        if self.train:
             self.datapath = glob.glob(os.path.join(self.root, 'train/*.npz'))
         else:
             self.datapath = glob.glob(os.path.join(self.root, 'test/*.npz'))
@@ -52,8 +53,12 @@ class SceneflowDataset():
             sample_idx = np.arange(sample_start_idx,
                                    sample_start_idx+self.npoints)
             for frame_idx in range(start_idx, start_idx + self.num_frames):
-                data = pc_list[frame_idx] # num_point x 4
+                data = pc_list[frame_idx]  # num_point x 4
                 pos = data[sample_idx, :3]
+                #! Re: color is all zeros. This project use code from FlowNet3D
+                #! which is trained on FlyingThings3D, a dataset that has color.
+                #! to be compatible with original network, author added this (0,0,0)
+                #! No, it seems no color needed even for Flying,,
                 color = np.zeros((len(sample_idx), 3))
 
                 pos_list.append(pos)
@@ -61,6 +66,7 @@ class SceneflowDataset():
 
             prob = random.uniform(0, 1)
             if prob < self.flip_prob:
+                #! Re:  Invariance under transformations for point clouds ?
                 pos_list = pos_list[::-1]
                 color_list = color_list[::-1]
 
@@ -74,7 +80,8 @@ class SceneflowDataset():
 
 
 if __name__ == '__main__':
-    d = SceneflowDataset(root = "/home/songrise/Desktop/Summer_Research/Self-Supervised-Scene-Flow-Estimation/data_preprocessing/kitti_self_supervised_flow",npoints=2048, train = True)
+    d = SceneflowDataset(
+        root="/home/songrise/Desktop/Summer_Research/Self-Supervised-Scene-Flow-Estimation/data_preprocessing/kitti_self_supervised_flow", npoints=2048, train=True)
     print('Len of dataset:', len(d))
     # print(d[10])
     bsize = 4
@@ -84,5 +91,3 @@ if __name__ == '__main__':
         # if dataset[0] == None:
         #     print (i, bsize)
         pos, color = d[idxs[i + start_idx]]
-
-
