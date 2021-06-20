@@ -152,6 +152,7 @@ BN_DECAY_DECAY_RATE = 0.5
 BN_DECAY_DECAY_STEP = float(DECAY_STEP)
 BN_DECAY_CLIP = 0.99
 
+#! Re: Supervised fine-tuning
 TEST_DATASET = DATASET.SceneflowDataset(
     DATA, npoints=NUM_POINT, train=False, num_frames=NUM_FRAMES)
 print('len of test: ', len(TEST_DATASET))

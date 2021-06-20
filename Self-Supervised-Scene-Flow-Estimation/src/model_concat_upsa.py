@@ -1,6 +1,6 @@
 """
 !Re: I find this script is modified from FlowNet 3D, 
-origin: https://github.com/xingyul/flownet3d/blob/master/model_concat_upsa.py
+! origin: https://github.com/xingyul/flownet3d/blob/master/model_concat_upsa.py
 """
 from utils.pointnet_util import *
 import utils.tf_util
@@ -24,10 +24,12 @@ def placeholder_inputs(batch_size, num_point):
 
 
 def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False, flow_module='default'):
-    """ Semantic segmentation PointNet, input is BxNx3, output Bxnum_class """
+    """ Semantic segmentation PointNet, input is BxNx3, output Bxnum_class 
+        !RE the radius param is for radius in last layer
+    """
 
     end_points = {}  # ! Re perhaps to store internal steps
-    #! Re: point_cloud, as a matrix is probably BxNxD, where D is dimension of point features
+    #! Re: point_cloud, a matrix that is probably BxNxD, where D is dimension of point features
 
     batch_size = point_cloud.get_shape()[0].value  # batch_size = 16
     num_point = point_cloud.get_shape()[1].value // 2
@@ -38,6 +40,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
     #! l0 means layer 0, f1 means first frame
     l0_xyz_f1 = point_cloud[:, :num_point, 0:3]
     l0_points_f1 = point_cloud[:, :num_point, 3:]
+    #! Re: notice here, how two frame are differentiated
     l0_xyz_f2 = point_cloud[:, num_point:, 0:3]
     l0_points_f2 = point_cloud[:, num_point:, 3:]
 
@@ -55,7 +58,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
         #! Re: apply Point Net Layer,which returns new xyz, new features, indices from ball point query
         #! Recall that pointNet layer could be seen as an analogy to conv layers.
         #! indices means local regions (points in group?)
-        #! sa means Set Abstraction, which is referred to as set conv in FlowNet3D.
+        #! sa means Set Abstraction in pointnet++, which is referred to as set_conv in FlowNet3D.
 
         l1_xyz_f1, l1_points_f1, l1_indices_f1 = pointnet_sa_module(l0_xyz_f1,
                                                                     l0_points_f1,
@@ -71,7 +74,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
                                                                     scope='layer1',
                                                                     knn=knn)
         end_points['l1_indices_f1'] = l1_indices_f1
-        #! Re: what these two lines mean?
+        #! Re: what these two lines mean? is it a bug?
         end_points['l1_xyz_f1'] = l1_points_f1
         end_points['l1_input_f1'] = l0_xyz_f1
 
@@ -146,6 +149,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
     print('flow module', flow_module)
     #! Re refer to sec 4.2 in FlowNet3D, this module learn an flow embedding.
     #! a flow embedding is an implicit representation of point motion.
+    #! for the physical meaning of those layers, refer to flownet3d paper.
     if flow_module == 'default':
         _, l2_points_f1_new = flow_embedding_module(l2_xyz_f1, l2_xyz_f2,
                                                     l2_points_f1, l2_points_f2,
@@ -285,6 +289,7 @@ def huber_loss(error, delta):
 
 
 def get_loss(pred, label, mask, end_points):
+    #!Re not used in this project
     """ pred: BxNx3,
         label: BxNx3,
         mask: BxN

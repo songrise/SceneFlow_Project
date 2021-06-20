@@ -173,6 +173,7 @@ def get_bn_decay(batch):
 
 def train():
     with tf.Graph().as_default():
+        #!Re: Definition of computation graph
         with tf.device('/gpu:' + str(GPU_INDEX)):
             # pointclouds_pl = [16, 4096, 6], labels_pl = [16, 2048, 3], masks_pl = [16, 2048]
             pointclouds_pl = MODEL.placeholder_inputs(
@@ -189,6 +190,8 @@ def train():
 
             print("--- Get model and loss")
             # Get model and loss
+            #! Re: The model is model_concat_upsa_cycle.py
+            #! As for the meaning of those variables, refer to model_concat_upsa_cycle.py
             pred_f, pred_b, label_nn, end_points_f, end_points_b = MODEL.get_model(RADIUS,
                                                                                    LAYER,
                                                                                    pointclouds_pl,
@@ -288,6 +291,8 @@ def train():
 
 
 def get_batch(dataset, idxs, start_idx, end_idx):
+    #! Re not actually used in this project,
+    #! legacy codes from FlowNet3D
     bsize = end_idx - start_idx
     # change here,  numpoint *(5, 3)
     batch_data = np.zeros((bsize, NUM_POINT * 2, 6))
@@ -340,11 +345,13 @@ def get_cycle_batch(dataset, idxs, start_idx, end_idx):
 
         for frame_idx in range(NUM_FRAMES):
             np.random.shuffle(shuffle_idx)
+            #!Re: set the xyz coordinates, move clouds to center
             batch_data[i, NUM_POINT*frame_idx:NUM_POINT*(frame_idx+1), :3] = \
                 pos[frame_idx, shuffle_idx, :] - pos1_center
+            #!Re set the additional features (color here)
             batch_data[i, NUM_POINT*frame_idx:NUM_POINT*(frame_idx+1), 3:] = \
                 color[frame_idx, shuffle_idx, :]
-
+    #!Re: return the point cloud, the format for this see previous annotation.
     return batch_data
 
 
@@ -367,7 +374,7 @@ def train_one_epoch(sess, ops, train_writer):
         end_idx = (batch_idx + 1) * BATCH_SIZE
         batch_data = get_cycle_batch(
             TRAIN_DATASET, train_idxs, start_idx, end_idx)
-
+        #! Re: The actual data to be feed in to model
         feed_dict = {ops['pointclouds_pl']: batch_data,
                      ops['is_training_pl']: is_training, }
         summary, step, _, grad_var_val, \
