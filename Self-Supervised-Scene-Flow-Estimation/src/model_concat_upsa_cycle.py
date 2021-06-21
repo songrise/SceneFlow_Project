@@ -62,6 +62,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
         #! it seems that author subsample point cloud to 2048 points per scene
         #! such down sampling also seen in flownet3d
         pc1 = point_cloud[:, :2048, :3]
+        #!Re: ball query, finds all points that are within a radius to the query point
         rigid_idx, _ = query_ball_point(rigidity_radius, rigidity_nsample, pc1,
                                         pc1)
         rigid_grouped_flow = group_point(pred_flow, rigid_idx)
@@ -69,6 +70,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
         end_points_f['rigid_pc1_flow'] = pred_flow
 
     if rgb:
+        #! Re: pointnet++
         pred_f_rgb, dist_f, grouped_xyz_rgb_f = get_interpolated_rgb(
             pred_f, point_cloud[:, num_point:])
         end_points_f['pred_f_rgb'] = pred_f_rgb
@@ -81,7 +83,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
             0, dtype=pred_f.dtype, trainable=False, collections=[])
         pred_f_copy = tf.assign(pred_f_copy, pred_f, validate_shape=False)
     else:
-        #!Re:  else refer to same object
+        #!Re:  else two variable refer to same object
         pred_f_copy = pred_f
 
     with tf.variable_scope(tf.get_variable_scope(), reuse=True):
@@ -390,7 +392,7 @@ def get_cycle_loss(pred_f, grouped_xyz, pred_b, point_cloud1, end_points=None,
     end_points_loss['cycle_l2_loss'] = cycle_l2_loss
 
     l2_loss = knn_l2_loss + cycle_l2_loss
-    
+
     #!Re : Euclidian distance between predicted first frame and its nearest neighbor
     avg_distance_metric = tf.reduce_mean(
         tf.reduce_sum((pred_f - grouped_xyz) * (pred_f - grouped_xyz), axis=2) ** 0.5)
@@ -398,7 +400,8 @@ def get_cycle_loss(pred_f, grouped_xyz, pred_b, point_cloud1, end_points=None,
         flip_prefix), avg_distance_metric)
     tf.add_to_collection('{}Avg Distance Metric losses'.format(
         flip_prefix), avg_distance_metric)
-
+    #! Re: not quiet sure what rigidity indicate
+    #! perhaps, it means the points within grp is seen as rigid body
     if rigidity:
         rigid_group_flow = end_points['rigid_group_flow']
         rigid_pc1_flow = tf.expand_dims(end_points['rigid_pc1_flow'], 2)
