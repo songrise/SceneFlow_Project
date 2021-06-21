@@ -1,4 +1,4 @@
-from tf_grouping import query_ball_point, group_point, knn_point
+# from tf_grouping import query_ball_point, group_point, knn_point
 from utils.pointnet_util import *
 import utils.tf_util
 import pdb
