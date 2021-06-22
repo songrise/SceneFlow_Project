@@ -44,7 +44,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
     _, idx = knn_point(1, point_cloud[:, num_point:num_point*2, :3],
                        pred_f)
     #!Re: https://github.com/HimangiM/Just-Go-with-the-Flow-Self-Supervised-Scene-Flow-Estimation/blob/0a3350843de1ed769e69c3be17eb70db32ca6881/src/tf_ops/grouping/tf_grouping.py#L33
-    #! grouping in pointnet++
+    #! grouping in pointnet++, operating on 2nd frame
     grouped_xyz = group_point(point_cloud[:, num_point:num_point*2, :3], idx)
 
     #!Re pc2nn should be point clouds to its nearest neighbor

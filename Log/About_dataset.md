@@ -20,7 +20,7 @@ relative error < 5% (also following FlowNet3D)
 - preprocessing: ground point are removed.
 - ** Details:**
 - - Velodyne scans (i.e., the point clouds) are stored as floating point binaries, each point is stored with $(x, y, z)$ coordinate and reflectance value $(r)$, (however this project does not use $(r)$)
-- - **Format**: each "scene" are associated with 3 attributes. `pos1; pos2; gt`, where `pos` are Cartesian coordinates of points in $R^3$, `gt` is the displacement vector, and pos1 + gt = pos2 . (unit?)
+- - **Format**: each "scene" are associated with 3 attributes. `pos1; pos2; gt`, where `pos` are Cartesian coordinates of points in $R^3$, `gt` is the displacement vector (label), and pos1 + gt = pos2 . (unit meter)
     - <img src="C:\Users\11385\AppData\Roaming\Typora\typora-user-images\image-20210615163526975.png" alt="image-20210615163526975" style="zoom: 50%;" />
 
 ### About the NuScenes dataset
@@ -34,5 +34,19 @@ relative error < 5% (also following FlowNet3D)
 ## Source Codes
 
 - The major part of codes are edited from pointnet++ and flownet3d.
-- 
+- load dataset: `kitti_dataset_self_supervised_cycle.py`
+- model definition `model_concat_upsa.py` (FlowNet3D). `model_concat_upsa_cycle.py` (self-supervised)
+- training: `train_1nn_cycle_nuscenes.py` (self -supervised.)
+
+## next week
+
+code detail. flow embedding, dataset. find "problems" in the codes.  
+
+important: data processing, net arch, loss; regularization, opt (train)(hyper-param), metric.  
+
+when fail - analysis 
+
+
+
+
 

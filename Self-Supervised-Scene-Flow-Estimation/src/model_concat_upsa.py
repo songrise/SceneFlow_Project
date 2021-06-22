@@ -16,8 +16,10 @@ sys.path.append(os.path.join(BASE_DIR, 'utils'))
 
 def placeholder_inputs(batch_size, num_point):
     # change here, num_point*2 -> numpoint*5
+    #!Re 6 for xyzrgb, *2 because two frame store consecutively
     pointclouds_pl = tf.placeholder(tf.float32,
                                     shape=(batch_size, num_point * 2, 6))
+
     labels_pl = tf.placeholder(tf.float32, shape=(batch_size, num_point, 3))
     masks_pl = tf.placeholder(tf.float32, shape=(batch_size, num_point))
     return pointclouds_pl, labels_pl, masks_pl
@@ -44,7 +46,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
     l0_xyz_f2 = point_cloud[:, num_point:, 0:3]
     l0_points_f2 = point_cloud[:, num_point:, 3:]
 
-    #! Re: the radius for grouping in PointNet++.
+    #! Re: the radius for grouping (set abstraction) in PointNet++.
     RADIUS1 = 0.5
     RADIUS2 = 1.0
     RADIUS3 = 2.0
@@ -141,7 +143,7 @@ def get_model(radius, layer, point_cloud, is_training, bn_decay=None, knn=False,
         # Tensor("sa1/layer2_1/QueryBallPoint:0", shape=(16, 256, 16), dtype=int32, device= / device: GPU:0)
 
     # POINT MIXTURE
-    #! Re: Refer to FlowNet3D, two scene are mixed here.
+    #! Re: Refer to FlowNet3D, two scene are mixed here to generate flow embedding.
     # embedding layer
     # radius = 1, 10, 50
     print("Radius here:", radius)
