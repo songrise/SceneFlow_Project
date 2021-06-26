@@ -20,6 +20,7 @@ import utils.tf_util
 from utils.pointnet_util import *
 from tf_grouping import query_ball_point, group_point, knn_point
 from scipy.spatial import distance_matrix
+import math
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #!Re: some tutorial on open3d http://www.open3d.org/docs/release/tutorial
@@ -29,13 +30,33 @@ SUBSAMPLE = False
 #!Re: use model to infer the forward flow `gt`
 INFERENCE = True
 
-_dir = 'data_preprocessing/kitti_self_supervised_flow/train'
+ROTATE = True
+ROTATE_DEGREE = math.pi /48
+RAND_DOWN_SAMPLE_RATE = 1
+#!!!!!!!!!!!!!!
+ROTATE_MAT = np.mat([[np.cos(ROTATE_DEGREE),-np.sin(ROTATE_DEGREE),0],
+                     [np.sin(ROTATE_DEGREE),np.cos(ROTATE_DEGREE), 0 ],
+                     [0,0,1]])
+
+_dir = '/home/songrise/Desktop/SceneFlow_Project/Self-Supervised-Scene-Flow-Estimation/data_preprocessing/kitti_self_supervised_flow/train'
 file_name = '000000.npz'
 point_cloud = np.load(os.path.join(_dir, file_name))
+# point_cloud = np.random.choice(point_cloud,size = len(point_cloud)*RAND_DOWN_SAMPLE_RATE)
+print(point_cloud['pos1'].shape)
 if not SUBSAMPLE:
-    pc1 = point_cloud['pos1']
-    pc2 = point_cloud['pos2']
-    gt_flow = point_cloud['gt'] + pc1
+    if ROTATE:
+         pc1 = point_cloud['pos1']
+         pc1_r = np.matmul(point_cloud['pos1'], ROTATE_MAT)
+         pc2 = point_cloud['pos2']
+         gt = point_cloud['gt'] + pc1 - pc1_r
+         gt_flow = gt+pc1_r
+         pc1 = pc1_r
+
+
+    else:
+        pc1 = point_cloud['pos1']
+        pc2 = point_cloud['pos2']
+        gt_flow = point_cloud['gt'] + pc1
 else:
     pc1 = point_cloud['pos1'][:2048, :3]
     pc2 = point_cloud['pos2'][:2048, :3]
@@ -57,7 +78,7 @@ if not INFERENCE:
     pcd3.points = o3d.utility.Vector3dVector(gt_flow)
     pcd3.paint_uniform_color([0, 0, 1])  # ! Re: blue
 
-    o3d.visualization.draw_geometries([pcd1, pcd2, pcd3])
+    o3d.visualization.draw_geometries([pcd1, pcd2,pcd3])
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     sys.path.append(BASE_DIR)
@@ -209,6 +230,7 @@ else:
         sample_count = 0
 
         x  = np.load('data_preprocessing/kitti_self_supervised_flow/train/'+file_name)
+        # x = np.random.choice(x,size = len(x)*RAND_DOWN_SAMPLE_RATE)
         all_pred = []
         all_label = []
         all_points = []
@@ -220,11 +242,20 @@ else:
         print(len(x['pos1']), len(x['pos2']))
         for i in range(0, len_cloud, 2048):
             if i + 2048 < len(x['pos1']) and i + 2048 < len(x['pos2']):
-                pc1 = x['pos1'][i:i + 2048, :3]
-                pc2 = x['pos2'][i:i + 2048, :3]
-                gt = x['gt'][i:i + 2048, :3]
-                pc1 = pc1 - ref_center
-                pc2 = pc2 - ref_center
+                if ROTATE:
+                    pc1 = x['pos1'][i:i + 2048, :3]
+                    pc1_r = np.matmul(point_cloud['pos1'][i:i + 2048, :3], ROTATE_MAT)
+                    pc2 = x['pos2'][i:i + 2048, :3]
+                    gt = x['gt'][i:i + 2048, :3] + pc1 - pc1_r
+                    pc1 = pc1_r
+                    pc1 = pc1 - ref_center
+                    pc2 = pc2 - ref_center
+                else:
+                    pc1 = x['pos1'][i:i + 2048, :3]
+                    pc2 = x['pos2'][i:i + 2048, :3]
+                    gt = x['gt'][i:i + 2048, :3]
+                    pc1 = pc1 - ref_center
+                    pc2 = pc2 - ref_center
                 batch_data.append(np.concatenate([np.concatenate([pc1,
                                                                   pc2], axis=0),
                                                   np.zeros((4096, 3))], axis=1))  # 4096, 6
@@ -236,10 +267,19 @@ else:
         pred_val, end_points_val = sess.run([ops['pred'], ops['end_points']], feed_dict=feed_dict)
 
         #!Re: visualization here
-        pc1 = point_cloud['pos1'][:2048, :3]
-        pc2 = point_cloud['pos2'][:2048, :3]
-        #!Re since author hard-coded 2048, we follow this and use first sampling patch for visualization.
-        gt_flow = pred_val[0] + pc1 #! predicted second frame
+
+        if ROTATE:
+            pc1 = x['pos1'][:2048, :3]
+            pc1 = np.matmul(pc1, ROTATE_MAT)
+
+            pc2 = x['pos2'][: 2048, :3]
+            gt_flow = pred_val[0] + pc1
+        else:
+            pc1 = point_cloud['pos1'][:2048, :3]
+
+            pc2 = point_cloud['pos2'][:2048, :3]
+            # !Re since author hard-coded 2048, we follow this and use first sampling patch for visualization.
+            gt_flow = pred_val[0] + pc1  # ! predicted second frame
 
         pcd1 = o3d.geometry.PointCloud()
         pcd1.points = o3d.utility.Vector3dVector(pc1)

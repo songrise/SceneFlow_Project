@@ -175,6 +175,8 @@ with tf.Graph().as_default():
     for ki in all_kitti:
         #         try:
         x = np.load(ki)
+        #try some random sampling
+        x = np.random.choice(x, size = len(x)//2)
 
         batch_label = []
         batch_data = []

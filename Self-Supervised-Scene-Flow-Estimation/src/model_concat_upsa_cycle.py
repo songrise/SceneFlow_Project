@@ -1,7 +1,3 @@
-
-from tf_grouping import query_ball_point, group_point, knn_point
-from utils.pointnet_util import *
-import utils.tf_util
 import tensorflow as tf
 import numpy as np
 import math
@@ -11,7 +7,9 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(BASE_DIR, 'utils'))
-
+import utils.tf_util
+from utils.pointnet_util import *
+from tf_grouping import query_ball_point, group_point, knn_point
 
 def placeholder_inputs(batch_size, num_point, num_frames=3):
     # change here, num_point*2 -> numpoint*5
