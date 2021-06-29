@@ -31,7 +31,8 @@ SUBSAMPLE = False
 INFERENCE = True
 
 ROTATE = True
-ROTATE_DEGREE = math.pi /48
+
+ROTATE_DEGREE = math.pi / 30
 RAND_DOWN_SAMPLE_RATE = 1
 #!!!!!!!!!!!!!!
 ROTATE_MAT = np.mat([[np.cos(ROTATE_DEGREE),-np.sin(ROTATE_DEGREE),0],

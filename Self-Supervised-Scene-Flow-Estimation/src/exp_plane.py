@@ -261,10 +261,15 @@ if True:
         pcd3 = o3d.geometry.PointCloud()
         pcd3.points = o3d.utility.Vector3dVector(gt_flow)
         pcd3.paint_uniform_color([0, 0, 1])  # ! Re: blue
+        print(np.std(pred_val[0][0]))
+        print(pred_val[0][0][np.where(pred_val[0][0] > 0.5)])
+
+        print("mean value of pred: ", np.mean(pred_val[0][:, 2]))
+        print(pred_val[0])
 
         o3d.visualization.draw_geometries([pcd1, pcd2, pcd3])
-        print(np.std(pred_val[0][0]))
-        print(pred_val[0][0][np.where(pred_val[0][0]>0.5)])
+
+
         import seaborn as sns
         # sns.distplot(pred_val[0][0])
         # sns.distplot(pred_val[0][1])

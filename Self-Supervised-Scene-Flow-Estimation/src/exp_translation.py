@@ -252,7 +252,8 @@ if True:
             pc2 = pc1+[1,0,0]
             # !Re since author hard-coded 2048, we follow this and use first sampling patch for visualization.
             gt_flow = pred_val[0] + pc1  # ! predicted second frame
-
+        print("mean value of pred: ",np.mean(pred_val[0][:,0]))
+        print(pred_val[0])
         pcd1 = o3d.geometry.PointCloud()
         pcd1.points = o3d.utility.Vector3dVector(pc1)
         pcd1.paint_uniform_color([1, 0, 0])  # ! Re: red
@@ -267,3 +268,4 @@ if True:
 
         o3d.visualization.draw_geometries([pcd1, pcd2, pcd3])
         np.savetxt("pred_val2.csv",pred_val[0])
+
